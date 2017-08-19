@@ -1,38 +1,28 @@
 import React from 'react';
-import { StyleSheet, Text, FlatList, StatusBar, View, TextInput, ProgressBarAndroid,UIManager } from 'react-native';
+import { StyleSheet, Text, FlatList, StatusBar, View, TextInput, ProgressBarAndroid,Button } from 'react-native';
 import monster from '../data/monster'
 
 export default class Fight extends React.Component {
 	constructor() {
 		super()
 		this.state = {
-			user: {
-				name: "赵日天",
-        attr: [
-          {strength: 65},
-          {intelligence: 40},
-          {agility: 40},
-          {critical: 20},
-          {dodge: 40}
-        ]
-			},
       description: [
       ],
       tools: [
         {
-          weapon: "杀猪刀"
+          weapon: ""
         },
         {
-          clothes: "杀猪刀"
+          clothes: ""
         },
         {
-          shoes: "杀猪刀"
+          shoes: ""
         },
         {
-          ring: "杀猪刀"
+          ring: ""
         },
         {
-          necklace: "杀猪刀"
+          necklace: ""
         },
       ],
       enemy: {},
@@ -41,10 +31,44 @@ export default class Fight extends React.Component {
         nowHP: 2333,
         attack: 266,
         defense: 22,
-        agility: 60,
+        name: "赵日天",
+        strength: 65,
+        intelligence: 40,
+        agility: 40,
+        critical: 20,
+        dodge: 40,
+        EXP: 0,
+        maxEXP: 0, 
+        level: 1,
         isTurn: false
   		},
-      isFight: false
+      isFight: false,
+      bag: [
+        {
+          name: "杀猪刀",
+          type: "weapon",
+          level: 1,
+          minAttack: 22,
+          maxAttack: 34,
+          strength: 5,
+          intelligence: 0,
+          agility: 0,
+          critical: 0,
+          dodge: 0,
+          up: 0
+        },
+        {
+          name: "阿迪王",
+          type: "weapon",
+          level: 1,
+          strength: 0,
+          intelligence: 0,
+          agility: 30,
+          critical: 0,
+          dodge: 0,
+          up: 0
+        },
+      ]
     }
 	}
 
@@ -79,7 +103,7 @@ export default class Fight extends React.Component {
     }
     let enemy = monster[random];
 
-    let attack = this.state.user.attr[0].strength * 5
+    let attack = this.state.role.strength * 5
     let role = this.state.role
     role.attack = attack
 
@@ -95,19 +119,32 @@ export default class Fight extends React.Component {
   fighting() {
     let role = this.state.role
     let enemy = this.state.enemy
-    console.log(111)
     if(this.state.isFight) {
       if(role.agility >= enemy.agility && !role.isTurn) {
-        console.log(222)
-        let damage = role.attack-enemy.defense
+        let damage = role.attack - enemy.defense > 0 ? role.attack-enemy.defense : 0
         enemy.nowHP = enemy.nowHP - damage
         let description = this.state.description
         let str,isFight
         if(enemy.nowHP <= 0) {
-          str = `${this.state.user.name}战斗胜利！`
+          let exp = this.state.role.level * 20
+          str = `${this.state.role.name}战斗胜利！获得${exp}经验`
+          role.EXP += exp
+          if(role.maxEXP == 0) {
+            role.maxEXP = (Math.pow(role.level - 1, 3) + 60)/5 * ((role.level - 1) * 2 +60)
+          }
+          if(role.EXP >= role.maxEXP) {
+            role.level += 1
+            role.EXP = 0
+            role.maxEXP = (Math.pow(role.level - 1, 3) + 60)/5 * ((role.level - 1) * 2 +60)
+            role.strength = role.strength + role.level * 3
+            role.intelligence = role.intelligence + role.level * 1
+            role.agility = role.agility + role.level * 1
+            role.critical = role.critical + role.level * 2
+            role.damage = role.damage + role.level * 1
+          }
           isFight = false
         }else {
-          str = `${this.state.user.name}对${enemy.name}造成了${damage}伤害`
+          str = `${this.state.role.name}对${enemy.name}造成了${damage}伤害`
           isFight = true
         }
         description.push({log:str})
@@ -122,20 +159,20 @@ export default class Fight extends React.Component {
 
         if(enemy.nowHP <= 0) {
           this.encounter()
+          console.log(this.state.role)
         }else {
           setTimeout(()=>{this.fighting()},1000)
         }
       }else {
-        console.log(333)
-        let damage = enemy.attack-role.defense
+        let damage = enemy.attack - role.defense > 0 ? enemy.attack - role.defense : 0
         role.nowHP = role.nowHP - damage
         let description = this.state.description
         let str,isFight
         if(role.nowHP <= 0) {
-          str = `${this.state.user.name}战斗失败！`
+          str = `${this.state.role.name}战斗失败！`
           isFight = false
         }else {
-          str = `${enemy.name}对${this.state.user.name}造成了${damage}伤害`
+          str = `${enemy.name}对${this.state.role.name}造成了${damage}伤害`
           isFight = true
         }
         description.push({log:str})
@@ -156,14 +193,6 @@ export default class Fight extends React.Component {
     }
   }
 
-  countRoleAttack() {
-    let attack = this.state.user.attr[0].strength * 5
-    let role = this.state.role
-    role.attack = attack
-    this.setState({
-      role: role
-    })
-  }
 
   _renderItem({item}) {
     let translate;
@@ -201,6 +230,12 @@ export default class Fight extends React.Component {
     }
   }
 
+  _renderBag({item}) {
+    let translate;
+    console.log(item)
+    return <View><Text>{item.name}</Text><Text>装备</Text><Text>强化</Text></View>
+  }
+
   _renderTools({item}) {
     let translate;
     switch(Object.keys(item)[0]) {
@@ -231,26 +266,22 @@ export default class Fight extends React.Component {
     }
   }
 
-  focus() {
-    // Explicitly focus the text input using the raw DOM API
-    this.textInput.focus();
-  }
-
   render() {
   	return (
       <View style={styles.mainWrapper}>
         <StatusBar
-         hidden={false}  //是否隐藏状态栏。  
-         translucent={false}//指定状态栏是否透明。设置为true时，应用会在状态栏之下绘制（即所谓“沉浸式”——被状态栏遮住一部分）。常和带有半透明背景色的状态栏搭配使用。  
-         barStyle={'default'} // enum('default', 'light-content', 'dark-content')   
+         hidden={false}
+         translucent={false}
+         barStyle={'default'}
         /> 
         <View style={styles.userWrapper}>
           <View style={styles.flexPart}>
-              <Text style={styles.fn24}>{this.state.user.name}</Text>
-              <FlatList
-                data={this.state.user.attr}
-                renderItem={this._renderItem}
-              />
+              <Text style={styles.fn24}>{this.state.role.name} lv{this.state.role.level}</Text>
+              <Text style={styles.simpleFn}>力量:{this.state.role.strength}</Text>
+              <Text style={styles.simpleFn}>智力:{this.state.role.intelligence}</Text>
+              <Text style={styles.simpleFn}>敏捷:{this.state.role.agility}</Text>
+              <Text style={styles.simpleFn}>暴击:{this.state.role.critical}</Text>
+              <Text style={styles.simpleFn}>闪避:{this.state.role.dodge}</Text>
           </View>
           <View style={styles.flexPart}>
               <Text style={styles.fn24}>装备</Text>
@@ -262,11 +293,12 @@ export default class Fight extends React.Component {
           <View style={styles.flexPart}>
               <Text style={styles.fn24}>对手</Text>
               <Text style={styles.bold}>{this.state.enemy.name}</Text>
-              <Text>{this.state.enemy.HP}</Text>
+              <Text>生命值：{this.state.enemy.HP}</Text>
               <Text>{this.state.enemy.type}</Text>
               <ProgressBarAndroid style={styles.line} color="#f22" styleAttr="Horizontal" indeterminate={false} progress={this.state.enemy.nowHP/this.state.enemy.HP}/>
               <Text style={styles.bold}>赵日天</Text>
               <ProgressBarAndroid style={styles.line} color="#f22" styleAttr="Horizontal" indeterminate={false} progress={this.state.role.nowHP/this.state.role.HP}/>
+              <ProgressBarAndroid style={styles.line} color="blue" styleAttr="Horizontal" indeterminate={false} progress={this.state.role.EXP/this.state.role.maxEXP}/>
           </View>
         </View>
         
@@ -280,12 +312,11 @@ export default class Fight extends React.Component {
               renderItem={this._renderItem.bind(this)}
             />
           </View>
-          <TextInput ref={(c) => this._input = c} />
           <View style={styles.flexPart}>
             <Text style={styles.fn24}>背包</Text>
             <FlatList
-              data={this.state.tools}
-              renderItem={this._renderItem}
+              data={this.state.bag}
+              renderItem={this._renderBag}
             />
           </View>
         </View>
