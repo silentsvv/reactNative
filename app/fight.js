@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, FlatList, StatusBar, View, TextInput, ProgressBarAndroid,Button } from 'react-native';
+import { StyleSheet, Text, FlatList, StatusBar, View, TextInput, ProgressBarAndroid,Button,TouchableHighlight } from 'react-native';
 import monster from '../data/monster'
 
 export default class Fight extends React.Component {
@@ -8,23 +8,13 @@ export default class Fight extends React.Component {
 		this.state = {
       description: [
       ],
-      tools: [
-        {
-          weapon: ""
-        },
-        {
-          clothes: ""
-        },
-        {
-          shoes: ""
-        },
-        {
-          ring: ""
-        },
-        {
-          necklace: ""
-        },
-      ],
+      tools: {
+        weapon: {},
+        clothes: {},
+        shoes: {},
+        ring: {},
+        necklace: {},
+      },
       enemy: {},
       role: {
         HP: 2333,
@@ -59,7 +49,7 @@ export default class Fight extends React.Component {
         },
         {
           name: "阿迪王",
-          type: "weapon",
+          type: "shoes",
           level: 1,
           strength: 0,
           intelligence: 0,
@@ -73,7 +63,6 @@ export default class Fight extends React.Component {
 	}
 
   componentWillMount() {
-    console.log(monster)
   }
 
   componentDidMount() {
@@ -159,7 +148,6 @@ export default class Fight extends React.Component {
 
         if(enemy.nowHP <= 0) {
           this.encounter()
-          console.log(this.state.role)
         }else {
           setTimeout(()=>{this.fighting()},1000)
         }
@@ -191,6 +179,11 @@ export default class Fight extends React.Component {
         }
       }
     }
+  }
+
+  _keyExtractor(item, index) {
+    console.log(item,index)
+    return ""+index
   }
 
 
@@ -230,40 +223,31 @@ export default class Fight extends React.Component {
     }
   }
 
-  _renderBag({item}) {
-    let translate;
-    console.log(item)
-    return <View><Text>{item.name}</Text><Text>装备</Text><Text>强化</Text></View>
+  _onPressButton(item,index) {
+    let bag = this.state.bag
+    let tools = this.state.tools
+    let getItem = bag.splice(index,1)[0]
+
+    tools[getItem.type] = getItem
+    if(bag.length == 0) {
+      bag = []
+    }
+    this.setState({
+      tools: tools,
+      bag: bag
+    })
   }
 
-  _renderTools({item}) {
-    let translate;
-    switch(Object.keys(item)[0]) {
-      case "weapon":
-        translate = "武器";
-        break;
-      case "clothes":
-        translate = "衣服";
-        break;
-      case "shoes":
-        translate = "鞋子";
-        break;
-      case "ring":
-        translate = "戒子";
-        break;
-      case "necklace":
-        translate = "项链";
-        break;
-      default:
-        translate = "none"
-    }
-    if(translate == "log") {
-      return <Text>{item.log}</Text>
-    }else if(translate == "tools") {
-      return <Text>{item.item}</Text>
-    }else{
-      return <Text style={styles.simpleFn}>{translate}:{item[Object.keys(item)[0]]}</Text>
-    }
+  _renderBag({item,index}) {
+    return <View style={styles.bagItem}>
+      <Text style={[styles.itemName,styles.fn14]}>{item.name}</Text>
+      <TouchableHighlight onPress={this._onPressButton.bind(this,item,index)}>
+        <Text style={[styles.itemOn,styles.fn12]}>装备</Text>
+      </TouchableHighlight>
+      <TouchableHighlight>
+        <Text style={[styles.itemUp,styles.fn12]}>强化</Text>
+      </TouchableHighlight>
+    </View>
   }
 
   render() {
@@ -285,10 +269,11 @@ export default class Fight extends React.Component {
           </View>
           <View style={styles.flexPart}>
               <Text style={styles.fn24}>装备</Text>
-              <FlatList
-                data={this.state.tools}
-                renderItem={this._renderTools}
-              />
+              <Text style={styles.simpleFn}>武器:{this.state.tools.weapon.name == undefined?"无":this.state.tools.weapon.name}</Text>
+              <Text style={styles.simpleFn}>衣服:{this.state.tools.clothes.name == undefined?"无":this.state.tools.clothes.name}</Text>
+              <Text style={styles.simpleFn}>鞋子:{this.state.tools.shoes.name == undefined?"无":this.state.tools.shoes.name}</Text>
+              <Text style={styles.simpleFn}>戒指:{this.state.tools.ring.name == undefined?"无":this.state.tools.ring.name}</Text>
+              <Text style={styles.simpleFn}>项链:{this.state.tools.necklace.name == undefined?"无":this.state.tools.necklace.name}</Text>
           </View>
           <View style={styles.flexPart}>
               <Text style={styles.fn24}>对手</Text>
@@ -309,6 +294,7 @@ export default class Fight extends React.Component {
               ref="_flatList"
               data={this.state.description}
               extraData={this.state}
+               keyExtractor={(item,index) => index}
               renderItem={this._renderItem.bind(this)}
             />
           </View>
@@ -316,7 +302,8 @@ export default class Fight extends React.Component {
             <Text style={styles.fn24}>背包</Text>
             <FlatList
               data={this.state.bag}
-              renderItem={this._renderBag}
+              keyExtractor={(item,index) => index}
+              renderItem={this._renderBag.bind(this)}
             />
           </View>
         </View>
@@ -336,12 +323,10 @@ const styles = StyleSheet.create({
     paddingTop: 25,
     height: "64%"
   },
-
-
-  userAttr: {
-
+  bagItem: {
+    flexDirection: "row",
+    alignItems: "center"
   },
-  
 
 
   flexPart: {
@@ -352,6 +337,12 @@ const styles = StyleSheet.create({
   },
   fn24: {
     fontSize: 24
+  },
+  fn14: {
+    fontSize: 14
+  },
+  fn12: {
+    fontSize: 12
   },
   bold: {
     fontWeight: "600"
