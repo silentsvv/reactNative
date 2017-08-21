@@ -1,6 +1,8 @@
 import React from 'react';
-import { StyleSheet, Text, FlatList, StatusBar, View, TextInput, ProgressBarAndroid,Button,TouchableHighlight } from 'react-native';
+import { StyleSheet, Text, FlatList, StatusBar, View, TextInput, ProgressBarAndroid,Button,TouchableHighlight,TouchableOpacity } from 'react-native';
 import monster from '../data/monster'
+import equipment from '../data/equipment'
+import EquipDetail from './equipDetail'
 
 export default class Fight extends React.Component {
 	constructor() {
@@ -19,7 +21,7 @@ export default class Fight extends React.Component {
       role: {
         HP: 2333,
         nowHP: 2333,
-        attack: 266,
+        attack: 80,
         defense: 22,
         name: "赵日天",
         strength: 65,
@@ -27,11 +29,15 @@ export default class Fight extends React.Component {
         agility: 40,
         critical: 20,
         dodge: 40,
+        minAttack: 0,
+        maxAttack: 0,
         EXP: 0,
         maxEXP: 0, 
         level: 1,
-        isTurn: false
+        isTurn: false,
+        money: 0
   		},
+      extra: {},
       isFight: false,
       bag: [
         {
@@ -60,6 +66,7 @@ export default class Fight extends React.Component {
         },
       ]
     }
+    this.viewArray = []
 	}
 
   componentWillMount() {
@@ -77,6 +84,75 @@ export default class Fight extends React.Component {
     this.loadEnemy()
   }
 
+  _updateStatus() {
+    let tools = this.state.tools
+    let weapon = tools.weapon
+    let clothes = tools.clothes
+    let shoes = tools.shoes
+    let ring = tools.ring
+    let necklace = tools.necklace
+
+    let arr = [weapon,clothes,shoes,ring,necklace]
+
+    let extra = {
+      HP: 0,
+      attack: 0,
+      minAttack: 0,
+      maxAttack: 0,
+      defense: 0,
+      strength: 0,
+      intelligence: 0,
+      agility: 0,
+      critical: 0,
+      dodge: 0,
+    }
+
+    for(let i = 0, max = arr.length; i < max; i++) {
+      let item = arr[i]
+      for(let j in item) {
+        if(j === "HP") {
+          extra.HP += extra.HP + item[j]
+        }
+        if(j === "attack") {
+          extra.attack += extra.attack + item[j]
+        }
+        if(j === "minAttack") {
+          extra.minAttack += extra.minAttack + item[j]
+        }
+        if(j === "maxAttack") {
+          extra.maxAttack += extra.maxAttack + item[j]
+        }
+        if(j === "strength") {
+          extra.strength += extra.strength + item[j]
+        }
+        if(j === "intelligence") {
+          extra.intelligence += extra.intelligence + item[j]
+        }
+        if(j === "agility") {
+          extra.agility += extra.agility + item[j]
+        }
+        if(j === "critical") {
+          extra.critical += extra.critical + item[j]
+        }
+        if(j === "dodge") {
+          extra.dodge += extra.dodge + item[j]
+        }
+      }
+    }
+
+    let attack = (this.state.role.strength + extra.strength) * 1
+    let minAttack = Math.floor(attack * 0.8) + extra.minAttack
+    let maxAttack = Math.floor(attack * 1.2) + extra.maxAttack
+    let role = this.state.role
+
+    Object.assign(role,{minAttack,maxAttack})
+
+    this.setState({
+      role: role,
+      extra: extra
+    })
+  }
+
   loadEnemy() {
     let random = Math.floor(Math.random()*monster.length);
     let HP = Math.floor((Math.floor(Math.random()*40) + 80)/100 * monster[random].HP);
@@ -92,12 +168,9 @@ export default class Fight extends React.Component {
     }
     let enemy = monster[random];
 
-    let attack = this.state.role.strength * 5
-    let role = this.state.role
-    role.attack = attack
+    this._updateStatus();
 
     this.setState({
-      role: role,
       enemy: newMonster,
       isFight: true
     },()=> {
@@ -108,16 +181,27 @@ export default class Fight extends React.Component {
   fighting() {
     let role = this.state.role
     let enemy = this.state.enemy
+    let bag = this.state.bag
     if(this.state.isFight) {
       if(role.agility >= enemy.agility && !role.isTurn) {
-        let damage = role.attack - enemy.defense > 0 ? role.attack-enemy.defense : 0
+        let attack = role.minAttack + Math.floor(Math.random()*(role.maxAttack - role.minAttack))
+        let damage = attack - enemy.defense > 0 ? attack - enemy.defense : 0
         enemy.nowHP = enemy.nowHP - damage
         let description = this.state.description
         let str,isFight
         if(enemy.nowHP <= 0) {
           let exp = this.state.role.level * 20
-          str = `${this.state.role.name}战斗胜利！获得${exp}经验`
+          let money = 30
+          let random = Math.floor(Math.random() * 100)
+          if(random >= 0) {
+            let equipLength = equipment.length
+            let roll = Math.floor(Math.random() * equipLength)
+            let equip = equipment[roll]
+            bag.push(equip)
+          }
+          str = `${this.state.role.name}战斗胜利！获得${exp}经验,${money}金币`
           role.EXP += exp
+          role.money += money
           if(role.maxEXP == 0) {
             role.maxEXP = (Math.pow(role.level - 1, 3) + 60)/5 * ((role.level - 1) * 2 +60)
           }
@@ -142,7 +226,8 @@ export default class Fight extends React.Component {
           isFight: isFight,
           enemy: enemy,
           description: description,
-          role: role
+          role: role,
+          bag: bag
         })
         this.refs._flatList.scrollToEnd()
 
@@ -182,7 +267,6 @@ export default class Fight extends React.Component {
   }
 
   _keyExtractor(item, index) {
-    console.log(item,index)
     return ""+index
   }
 
@@ -224,29 +308,39 @@ export default class Fight extends React.Component {
   }
 
   _onPressButton(item,index) {
-    let bag = this.state.bag
+    this.viewArray[index].measure((a, b, width, height, px, py) => {
+      console.log(a, b, width, height, px, py)
+    })
+    let bag = [].concat(this.state.bag)
     let tools = this.state.tools
     let getItem = bag.splice(index,1)[0]
-
-    tools[getItem.type] = getItem
-    if(bag.length == 0) {
-      bag = []
+    if(tools[getItem.type].name == undefined) {
+      tools[getItem.type] = getItem
+    }else {
+      bag.push(tools[getItem.type])
+      tools[getItem.type] = getItem
     }
     this.setState({
       tools: tools,
       bag: bag
     })
+    this._updateStatus()
   }
 
   _renderBag({item,index}) {
-    return <View style={styles.bagItem}>
+    return <View style={styles.bagItem} ref={(ref) => {
+      this.viewArray[index]=ref
+    }}
+    >
       <Text style={[styles.itemName,styles.fn14]}>{item.name}</Text>
-      <TouchableHighlight onPress={this._onPressButton.bind(this,item,index)}>
-        <Text style={[styles.itemOn,styles.fn12]}>装备</Text>
-      </TouchableHighlight>
-      <TouchableHighlight>
-        <Text style={[styles.itemUp,styles.fn12]}>强化</Text>
-      </TouchableHighlight>
+      <View style={styles.bagControl}>
+        <TouchableOpacity onPress={evt => this._onPressButton(item,index)}>
+          <Text style={[styles.itemOn,styles.fn12]}>装备</Text>
+        </TouchableOpacity>
+        <TouchableHighlight>
+          <Text style={[styles.itemUp,styles.fn12]}>强化</Text>
+        </TouchableHighlight>
+      </View>
     </View>
   }
 
@@ -261,11 +355,12 @@ export default class Fight extends React.Component {
         <View style={styles.userWrapper}>
           <View style={styles.flexPart}>
               <Text style={styles.fn24}>{this.state.role.name} lv{this.state.role.level}</Text>
-              <Text style={styles.simpleFn}>力量:{this.state.role.strength}</Text>
-              <Text style={styles.simpleFn}>智力:{this.state.role.intelligence}</Text>
-              <Text style={styles.simpleFn}>敏捷:{this.state.role.agility}</Text>
-              <Text style={styles.simpleFn}>暴击:{this.state.role.critical}</Text>
-              <Text style={styles.simpleFn}>闪避:{this.state.role.dodge}</Text>
+              <Text style={styles.simpleFn}>力量:{this.state.role.strength + this.state.extra.strength}</Text>
+              <Text style={styles.simpleFn}>智力:{this.state.role.intelligence  + this.state.extra.intelligence}</Text>
+              <Text style={styles.simpleFn}>敏捷:{this.state.role.agility  + this.state.extra.agility}</Text>
+              <Text style={styles.simpleFn}>暴击:{this.state.role.critical  + this.state.extra.critical}</Text>
+              <Text style={styles.simpleFn}>闪避:{this.state.role.dodge  + this.state.extra.dodge}</Text>
+              <Text style={styles.simpleFn}>攻击力:{this.state.role.minAttack} - {this.state.role.maxAttack}</Text>
           </View>
           <View style={styles.flexPart}>
               <Text style={styles.fn24}>装备</Text>
@@ -277,16 +372,15 @@ export default class Fight extends React.Component {
           </View>
           <View style={styles.flexPart}>
               <Text style={styles.fn24}>对手</Text>
-              <Text style={styles.bold}>{this.state.enemy.name}</Text>
+              <Text style={[styles.bold,this.state.enemy.type === "boss"?styles.red:""]}>{this.state.enemy.name}{this.state.enemy.type === "boss"?"(首领)":""}</Text>
               <Text>生命值：{this.state.enemy.HP}</Text>
-              <Text>{this.state.enemy.type}</Text>
               <ProgressBarAndroid style={styles.line} color="#f22" styleAttr="Horizontal" indeterminate={false} progress={this.state.enemy.nowHP/this.state.enemy.HP}/>
               <Text style={styles.bold}>赵日天</Text>
               <ProgressBarAndroid style={styles.line} color="#f22" styleAttr="Horizontal" indeterminate={false} progress={this.state.role.nowHP/this.state.role.HP}/>
               <ProgressBarAndroid style={styles.line} color="blue" styleAttr="Horizontal" indeterminate={false} progress={this.state.role.EXP/this.state.role.maxEXP}/>
+              <Text>金币:{this.state.role.money}</Text>
           </View>
         </View>
-        
         <View style={styles.bottomBox}>
           <View style={styles.flexPart2}>
             <Text style={styles.fn24}>战斗</Text>
@@ -294,14 +388,17 @@ export default class Fight extends React.Component {
               ref="_flatList"
               data={this.state.description}
               extraData={this.state}
-               keyExtractor={(item,index) => index}
+              keyExtractor={(item,index) => index}
               renderItem={this._renderItem.bind(this)}
             />
           </View>
           <View style={styles.flexPart}>
-            <Text style={styles.fn24}>背包</Text>
+            <View style={styles.bagWrap}>
+              <Text style={styles.fn24}>背包</Text><Text style={styles.bagMaxLen}>{this.state.bag.length}/50</Text>
+            </View>
             <FlatList
               data={this.state.bag}
+              extraData={this.state}
               keyExtractor={(item,index) => index}
               renderItem={this._renderBag.bind(this)}
             />
@@ -324,8 +421,22 @@ const styles = StyleSheet.create({
     height: "64%"
   },
   bagItem: {
+    position: "relative",
     flexDirection: "row",
-    alignItems: "center"
+    alignItems: "center",
+    justifyContent: "space-between",
+    overflow: "visible"
+  },
+  bagControl: {
+    flexDirection: "row",
+  },
+  bagWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  bagMaxLen: {
+    paddingRight: 20
   },
 
 
@@ -353,5 +464,8 @@ const styles = StyleSheet.create({
   },
   line: {
     width: "80%"
+  },
+  red: {
+    color: "red"
   }
 });
