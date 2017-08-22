@@ -64,9 +64,14 @@ export default class Fight extends React.Component {
           dodge: 0,
           up: 0
         },
-      ]
+      ],
+      set: {
+        maxDesLen : 50, //最大的战况输出数
+        maxItemLen : 3, //最大道具数
+        probability : 0, //!获得道具几率
+        time: 100 //回合时间
+      }
     }
-    this.viewArray = []
 	}
 
   componentWillMount() {
@@ -182,18 +187,19 @@ export default class Fight extends React.Component {
     let role = this.state.role
     let enemy = this.state.enemy
     let bag = this.state.bag
+    let description = [].concat(this.state.description)
+
     if(this.state.isFight) {
       if(role.agility >= enemy.agility && !role.isTurn) {
         let attack = role.minAttack + Math.floor(Math.random()*(role.maxAttack - role.minAttack))
         let damage = attack - enemy.defense > 0 ? attack - enemy.defense : 0
         enemy.nowHP = enemy.nowHP - damage
-        let description = this.state.description
         let str,isFight
         if(enemy.nowHP <= 0) {
           let exp = this.state.role.level * 20
           let money = 30
           let random = Math.floor(Math.random() * 100)
-          if(random >= 0) {
+          if(random >= this.state.set.probability && bag.length < this.state.set.maxItemLen) {
             let equipLength = equipment.length
             let roll = Math.floor(Math.random() * equipLength)
             let equip = equipment[roll]
@@ -202,6 +208,7 @@ export default class Fight extends React.Component {
           str = `${this.state.role.name}战斗胜利！获得${exp}经验,${money}金币`
           role.EXP += exp
           role.money += money
+          
           if(role.maxEXP == 0) {
             role.maxEXP = (Math.pow(role.level - 1, 3) + 60)/5 * ((role.level - 1) * 2 +60)
           }
@@ -220,6 +227,9 @@ export default class Fight extends React.Component {
           str = `${this.state.role.name}对${enemy.name}造成了${damage}伤害`
           isFight = true
         }
+        if(description.length >= this.state.set.maxDesLen) {
+          description.splice(0,1)
+        }
         description.push({log:str})
         role.isTurn = true
         this.setState({
@@ -228,18 +238,19 @@ export default class Fight extends React.Component {
           description: description,
           role: role,
           bag: bag
+        },()=> {
+          this.refs._flatList.scrollToEnd()
         })
-        this.refs._flatList.scrollToEnd()
+        
 
         if(enemy.nowHP <= 0) {
           this.encounter()
         }else {
-          setTimeout(()=>{this.fighting()},1000)
+          setTimeout(()=>{this.fighting()},this.state.set.time)
         }
       }else {
         let damage = enemy.attack - role.defense > 0 ? enemy.attack - role.defense : 0
         role.nowHP = role.nowHP - damage
-        let description = this.state.description
         let str,isFight
         if(role.nowHP <= 0) {
           str = `${this.state.role.name}战斗失败！`
@@ -248,6 +259,9 @@ export default class Fight extends React.Component {
           str = `${enemy.name}对${this.state.role.name}造成了${damage}伤害`
           isFight = true
         }
+        if(description.length >= this.state.set.maxDesLen) {
+          description.splice(0,1)
+        }
         description.push({log:str})
         role.isTurn = false
         this.setState({
@@ -255,12 +269,13 @@ export default class Fight extends React.Component {
           enemy: enemy,
           description: description,
           role: role
+        },()=> {
+          this.refs._flatList.scrollToEnd()
         })
-        this.refs._flatList.scrollToEnd()
         if(role.nowHP <= 0) {
           this.encounter()
         }else {
-          setTimeout(()=>{this.fighting()},1000)
+          setTimeout(()=>{this.fighting()},this.state.set.time)
         }
       }
     }
@@ -308,9 +323,6 @@ export default class Fight extends React.Component {
   }
 
   _onPressButton(item,index) {
-    this.viewArray[index].measure((a, b, width, height, px, py) => {
-      console.log(a, b, width, height, px, py)
-    })
     let bag = [].concat(this.state.bag)
     let tools = this.state.tools
     let getItem = bag.splice(index,1)[0]
@@ -328,10 +340,7 @@ export default class Fight extends React.Component {
   }
 
   _renderBag({item,index}) {
-    return <View style={styles.bagItem} ref={(ref) => {
-      this.viewArray[index]=ref
-    }}
-    >
+    return <View style={styles.bagItem}>
       <Text style={[styles.itemName,styles.fn14]}>{item.name}</Text>
       <View style={styles.bagControl}>
         <TouchableOpacity onPress={evt => this._onPressButton(item,index)}>
