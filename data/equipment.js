@@ -1,7 +1,7 @@
 var equipment = [
-	{
-		name: "菜刀",
-		HP: 0,
+{
+    name: "菜刀",
+    HP: 0,
     attack: 0,
     minAttack: 23,
     maxAttack: 28,
@@ -12,11 +12,12 @@ var equipment = [
     critical: 0,
     dodge: 0,
     type: "weapon",
-    level: 2
-	},
-	{
-		name: "回力",
-		HP: 0,
+    level: 2,
+    time: 0
+},
+{
+    name: "回力",
+    HP: 0,
     attack: 0,
     minAttack: 0,
     maxAttack: 0,
@@ -27,7 +28,8 @@ var equipment = [
     critical: 0,
     type: "shoes",
     dodge: 0,
-	}	
-]
+    level: 2,
+    time: 0
+}]
 
 export default equipment;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, FlatList, StatusBar, View, TextInput, ProgressBarAndroid,Button,TouchableHighlight,TouchableOpacity } from 'react-native';
+import { StyleSheet, Alert,Text, FlatList, StatusBar, View, TextInput, ProgressBarAndroid,Button,TouchableHighlight,TouchableOpacity } from 'react-native';
 import monster from '../data/monster'
 import equipment from '../data/equipment'
 import EquipDetail from './equipDetail'
@@ -35,7 +35,6 @@ export default class Fight extends React.Component {
         maxEXP: 0, 
         level: 1,
         isTurn: false,
-        money: 0
   		},
       extra: {},
       isFight: false,
@@ -51,7 +50,7 @@ export default class Fight extends React.Component {
           agility: 0,
           critical: 0,
           dodge: 0,
-          up: 0
+          time: 0
         },
         {
           name: "阿迪王",
@@ -62,19 +61,33 @@ export default class Fight extends React.Component {
           agility: 30,
           critical: 0,
           dodge: 0,
-          up: 0
-        },
+          time: 0
+        }
       ],
       set: {
         maxDesLen : 50, //最大的战况输出数
-        maxItemLen : 3, //最大道具数
+        maxItemLen : 50, //最大道具数
         probability : 0, //!获得道具几率
-        time: 100 //回合时间
-      }
+        time: 50, //回合时间
+        money: 60 //金币基数
+      },
+      location: {
+        pageX: 10,
+        pageY: 20,
+        height: 0
+      },
+      equipData: {},
+      isShow: false,
+      money: 0
     }
 	}
 
   componentWillMount() {
+    this.timer && clearTimeout(this.timer);
+  }
+
+  componentWillUnmount() {
+    this.timer && clearTimeout(this.timer);
   }
 
   componentDidMount() {
@@ -114,33 +127,69 @@ export default class Fight extends React.Component {
 
     for(let i = 0, max = arr.length; i < max; i++) {
       let item = arr[i]
+      let time = item.time
       for(let j in item) {
-        if(j === "HP") {
-          extra.HP += extra.HP + item[j]
-        }
-        if(j === "attack") {
-          extra.attack += extra.attack + item[j]
-        }
-        if(j === "minAttack") {
-          extra.minAttack += extra.minAttack + item[j]
-        }
-        if(j === "maxAttack") {
-          extra.maxAttack += extra.maxAttack + item[j]
-        }
-        if(j === "strength") {
-          extra.strength += extra.strength + item[j]
-        }
-        if(j === "intelligence") {
-          extra.intelligence += extra.intelligence + item[j]
-        }
-        if(j === "agility") {
-          extra.agility += extra.agility + item[j]
-        }
-        if(j === "critical") {
-          extra.critical += extra.critical + item[j]
-        }
-        if(j === "dodge") {
-          extra.dodge += extra.dodge + item[j]
+        if(time != undefined) {
+          console.log("!!!you")
+          if(j === "HP") {
+            extra.HP += extra.HP + Math.round(item[j] * (1+ 0.1* time))
+          }
+          if(j === "attack") {
+            extra.attack += extra.attack + Math.round(item[j] * (1+ 0.1* time))
+            
+          }
+          if(j === "minAttack") {
+            extra.minAttack += extra.minAttack + Math.round(item[j] * (1+ 0.1* time))
+          }
+          if(j === "maxAttack") {
+            extra.maxAttack += extra.maxAttack + Math.round(item[j] * (1+ 0.1* time))
+          }
+          if(j === "strength") {
+            extra.strength += extra.strength + Math.round(item[j] * (1+ 0.1* time))
+          }
+          if(j === "intelligence") {
+            extra.intelligence += extra.intelligence + Math.round(item[j] * (1+ 0.1* time))
+
+          }
+          if(j === "agility") {
+            extra.agility += extra.agility + Math.round(item[j] * (1+ 0.1* time))
+          }
+          if(j === "critical") {
+            extra.critical += extra.critical + Math.round(item[j] * (1+ 0.1* time))
+          }
+          if(j === "dodge") {
+            extra.dodge += extra.dodge + Math.round(item[j] * (1+ 0.1* time))
+          }
+        }else {
+          if(j === "HP") {
+            extra.HP += extra.HP + item[j]
+          }
+          if(j === "attack") {
+            extra.attack += extra.attack + item[j]
+            
+          }
+          if(j === "minAttack") {
+            extra.minAttack += extra.minAttack + item[j]
+          }
+          if(j === "maxAttack") {
+            extra.maxAttack += extra.maxAttack + item[j]
+          }
+          if(j === "strength") {
+            extra.strength += extra.strength + item[j]
+          }
+          if(j === "intelligence") {
+            extra.intelligence += extra.intelligence + item[j]
+
+          }
+          if(j === "agility") {
+            extra.agility += extra.agility + item[j]
+          }
+          if(j === "critical") {
+            extra.critical += extra.critical + item[j]
+          }
+          if(j === "dodge") {
+            extra.dodge += extra.dodge + item[j]
+          }
         }
       }
     }
@@ -184,10 +233,13 @@ export default class Fight extends React.Component {
   }
 
   fighting() {
+
     let role = this.state.role
     let enemy = this.state.enemy
     let bag = this.state.bag
+    let money = this.state.money
     let description = [].concat(this.state.description)
+    let _this = this
 
     if(this.state.isFight) {
       if(role.agility >= enemy.agility && !role.isTurn) {
@@ -197,7 +249,7 @@ export default class Fight extends React.Component {
         let str,isFight
         if(enemy.nowHP <= 0) {
           let exp = this.state.role.level * 20
-          let money = 30
+          let getMoney = 30 //金币设定
           let random = Math.floor(Math.random() * 100)
           if(random >= this.state.set.probability && bag.length < this.state.set.maxItemLen) {
             let equipLength = equipment.length
@@ -205,9 +257,10 @@ export default class Fight extends React.Component {
             let equip = equipment[roll]
             bag.push(equip)
           }
-          str = `${this.state.role.name}战斗胜利！获得${exp}经验,${money}金币`
+          str = `${this.state.role.name}战斗胜利！获得${exp}经验,${getMoney}金币`
           role.EXP += exp
-          role.money += money
+          money += getMoney
+          role.nowHP = role.HP
           
           if(role.maxEXP == 0) {
             role.maxEXP = (Math.pow(role.level - 1, 3) + 60)/5 * ((role.level - 1) * 2 +60)
@@ -246,7 +299,9 @@ export default class Fight extends React.Component {
         if(enemy.nowHP <= 0) {
           this.encounter()
         }else {
-          setTimeout(()=>{this.fighting()},this.state.set.time)
+          setTimeout(function(){
+            _this.fighting()
+          }, _this.state.set.time)
         }
       }else {
         let damage = enemy.attack - role.defense > 0 ? enemy.attack - role.defense : 0
@@ -254,6 +309,7 @@ export default class Fight extends React.Component {
         let str,isFight
         if(role.nowHP <= 0) {
           str = `${this.state.role.name}战斗失败！`
+          role.nowHP = role.HP
           isFight = false
         }else {
           str = `${enemy.name}对${this.state.role.name}造成了${damage}伤害`
@@ -275,7 +331,9 @@ export default class Fight extends React.Component {
         if(role.nowHP <= 0) {
           this.encounter()
         }else {
-          setTimeout(()=>{this.fighting()},this.state.set.time)
+          setTimeout(function(){
+            _this.fighting()
+          }, _this.state.set.time)
         }
       }
     }
@@ -322,7 +380,7 @@ export default class Fight extends React.Component {
     }
   }
 
-  _onPressButton(item,index) {
+  _onPressButton(evt,item,index) {
     let bag = [].concat(this.state.bag)
     let tools = this.state.tools
     let getItem = bag.splice(index,1)[0]
@@ -339,15 +397,54 @@ export default class Fight extends React.Component {
     this._updateStatus()
   }
 
+  _sale(item,index) {
+    let bag = [].concat(this.state.bag)
+    let money = this.state.money + item.level * this.state.set.money
+    bag.splice(index,1)[0]
+
+    this.setState({
+      money: money,
+      bag: bag
+    })
+  }
+
+  _upgrade(item,index) {
+    let bag = [].concat(this.state.bag)
+    let target = bag[index]
+    target.time++
+    this.setState({
+      bag: bag
+    })
+  }
+
   _renderBag({item,index}) {
     return <View style={styles.bagItem}>
-      <Text style={[styles.itemName,styles.fn14]}>{item.name}</Text>
+      <TouchableOpacity onLongPress={evt => this._onPressButton(item,index)} onPress={(evt) => {
+        let location = this.state.location
+        location.pageY = Math.floor(evt.nativeEvent.pageY)
+        this.setState({
+          location: location,
+          equipData: item,
+          isShow: true
+        })
+      }}
+        onPressOut={() => {
+          console.log('onPressOut')
+          setTimeout(()=> {
+            this.setState({
+              isShow: false
+            })
+          },1000)
+        }}
+      >
+        <Text style={[styles.itemName,styles.fn14]}>{item.name}{item.time>0?"+"+item.time:""}</Text>
+      </TouchableOpacity>
       <View style={styles.bagControl}>
-        <TouchableOpacity onPress={evt => this._onPressButton(item,index)}>
-          <Text style={[styles.itemOn,styles.fn12]}>装备</Text>
+        <TouchableOpacity onPress={()=> this._upgrade(item,index)}>
+          <Text style={[styles.itemOn,styles.fn12],{padding:2, color:"#f20"}}>强化</Text>
         </TouchableOpacity>
-        <TouchableHighlight>
-          <Text style={[styles.itemUp,styles.fn12]}>强化</Text>
+        <TouchableHighlight onLongPress={()=> this._sale(item,index)}  onPress={evt => this._onPressButton(item,index)}>
+          <Text style={[styles.itemUp,styles.fn12],{padding:2, color:"#2f5884"}}>卖出</Text>
         </TouchableHighlight>
       </View>
     </View>
@@ -355,7 +452,14 @@ export default class Fight extends React.Component {
 
   render() {
   	return (
-      <View style={styles.mainWrapper}>
+      <View style={styles.mainWrapper} onLayout={(e) => {
+          console.log(e.nativeEvent,1)
+          let location = this.state.location
+          location.height = e.nativeEvent.layout.height
+          this.setState({
+            location: location
+          })
+        }}>
         <StatusBar
          hidden={false}
          translucent={false}
@@ -372,7 +476,9 @@ export default class Fight extends React.Component {
               <Text style={styles.simpleFn}>攻击力:{this.state.role.minAttack} - {this.state.role.maxAttack}</Text>
           </View>
           <View style={styles.flexPart}>
+            <TouchableOpacity>
               <Text style={styles.fn24}>装备</Text>
+            </TouchableOpacity>
               <Text style={styles.simpleFn}>武器:{this.state.tools.weapon.name == undefined?"无":this.state.tools.weapon.name}</Text>
               <Text style={styles.simpleFn}>衣服:{this.state.tools.clothes.name == undefined?"无":this.state.tools.clothes.name}</Text>
               <Text style={styles.simpleFn}>鞋子:{this.state.tools.shoes.name == undefined?"无":this.state.tools.shoes.name}</Text>
@@ -385,9 +491,10 @@ export default class Fight extends React.Component {
               <Text>生命值：{this.state.enemy.HP}</Text>
               <ProgressBarAndroid style={styles.line} color="#f22" styleAttr="Horizontal" indeterminate={false} progress={this.state.enemy.nowHP/this.state.enemy.HP}/>
               <Text style={styles.bold}>赵日天</Text>
+              <Text>生命值：{this.state.role.HP}</Text>
               <ProgressBarAndroid style={styles.line} color="#f22" styleAttr="Horizontal" indeterminate={false} progress={this.state.role.nowHP/this.state.role.HP}/>
               <ProgressBarAndroid style={styles.line} color="blue" styleAttr="Horizontal" indeterminate={false} progress={this.state.role.EXP/this.state.role.maxEXP}/>
-              <Text>金币:{this.state.role.money}</Text>
+              <Text>金币:{this.state.money}</Text>
           </View>
         </View>
         <View style={styles.bottomBox}>
@@ -408,11 +515,20 @@ export default class Fight extends React.Component {
             <FlatList
               data={this.state.bag}
               extraData={this.state}
+              onLayout={(e) => {
+                console.log(e.nativeEvent,1)
+                let location = this.state.location
+                location.pageX = e.nativeEvent.layout.width
+                this.setState({
+                  location: location
+                })
+              }}
               keyExtractor={(item,index) => index}
               renderItem={this._renderBag.bind(this)}
             />
           </View>
         </View>
+        {this.state.isShow?(<EquipDetail data={this.state.equipData} {...this.state.location}/>):(null)}
       </View>
   	)
   }
