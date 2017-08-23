@@ -68,7 +68,7 @@ export default class Fight extends React.Component {
         maxDesLen : 50, //最大的战况输出数
         maxItemLen : 50, //最大道具数
         probability : 0, //!获得道具几率
-        time: 50, //回合时间
+        time: 1000, //回合时间
         money: 60 //金币基数
       },
       location: {
@@ -254,7 +254,7 @@ export default class Fight extends React.Component {
           if(random >= this.state.set.probability && bag.length < this.state.set.maxItemLen) {
             let equipLength = equipment.length
             let roll = Math.floor(Math.random() * equipLength)
-            let equip = equipment[roll]
+            let equip = Object.assign({},equipment[roll])
             bag.push(equip)
           }
           str = `${this.state.role.name}战斗胜利！获得${exp}经验,${getMoney}金币`
@@ -419,17 +419,20 @@ export default class Fight extends React.Component {
 
   _renderBag({item,index}) {
     return <View style={styles.bagItem}>
-      <TouchableOpacity onLongPress={evt => this._onPressButton(item,index)} onPress={(evt) => {
-        let location = this.state.location
-        location.pageY = Math.floor(evt.nativeEvent.pageY)
-        this.setState({
-          location: location,
-          equipData: item,
-          isShow: true
-        })
-      }}
+      <TouchableOpacity 
+        onPress={evt => this._onPressButton(item,index)}
+        onLongPress= {
+          (evt) => {
+            let location = this.state.location
+            location.pageY = Math.floor(evt.nativeEvent.pageY)
+            this.setState({
+              location: location,
+              equipData: item,
+              isShow: true
+            })
+          }
+        }
         onPressOut={() => {
-          console.log('onPressOut')
           setTimeout(()=> {
             this.setState({
               isShow: false
@@ -443,7 +446,7 @@ export default class Fight extends React.Component {
         <TouchableOpacity onPress={()=> this._upgrade(item,index)}>
           <Text style={[styles.itemOn,styles.fn12],{padding:2, color:"#f20"}}>强化</Text>
         </TouchableOpacity>
-        <TouchableHighlight onLongPress={()=> this._sale(item,index)}  onPress={evt => this._onPressButton(item,index)}>
+        <TouchableHighlight onPress={()=> this._sale(item,index)}>
           <Text style={[styles.itemUp,styles.fn12],{padding:2, color:"#2f5884"}}>卖出</Text>
         </TouchableHighlight>
       </View>
@@ -479,7 +482,7 @@ export default class Fight extends React.Component {
             <TouchableOpacity>
               <Text style={styles.fn24}>装备</Text>
             </TouchableOpacity>
-              <Text style={styles.simpleFn}>武器:{this.state.tools.weapon.name == undefined?"无":this.state.tools.weapon.name}</Text>
+              <Text style={styles.simpleFn}>武器:{this.state.tools.weapon.name == undefined?"无":(this.state.tools.weapon.name + (this.state.tools.weapon.time?"+"+this.state.tools.weapon.time:""))}</Text>
               <Text style={styles.simpleFn}>衣服:{this.state.tools.clothes.name == undefined?"无":this.state.tools.clothes.name}</Text>
               <Text style={styles.simpleFn}>鞋子:{this.state.tools.shoes.name == undefined?"无":this.state.tools.shoes.name}</Text>
               <Text style={styles.simpleFn}>戒指:{this.state.tools.ring.name == undefined?"无":this.state.tools.ring.name}</Text>

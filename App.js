@@ -17,8 +17,8 @@ export default class App extends React.Component {
 		      <View tabLabel='战斗'>
 		      	<Fight/>
 		      </View>
-		      <View tabLabel='技能'><Text>favorite</Text></View>
-		      <View tabLabel='设置'><Text>project</Text></View>
+		      <View tabLabel='技能'><Text style={{paddingTop: 25}}>敬请期待</Text></View>
+		      <View tabLabel='设置'><Text style={{paddingTop: 25}}>敬请期待</Text></View>
 		    </ScrollableTabView>
   	)
   }
