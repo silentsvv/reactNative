@@ -14,7 +14,7 @@ export default class App extends React.Component {
   render() {
   	return (
   			<ScrollableTabView tabBarPosition="bottom">
-		      <View tabLabel='战斗'>
+		      <View tabLabel='战斗' style={{flex: 1}}>
 		      	<Fight/>
 		      </View>
 		      <View tabLabel='技能'><Text style={{paddingTop: 25}}>敬请期待</Text></View>

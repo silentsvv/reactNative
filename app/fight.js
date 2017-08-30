@@ -78,7 +78,8 @@ export default class Fight extends React.Component {
       },
       equipData: {},
       isShow: false,
-      money: 0
+      money: 0,
+      randomColor: "666"
     }
 	}
 
@@ -210,6 +211,7 @@ export default class Fight extends React.Component {
   loadEnemy() {
     let random = Math.floor(Math.random()*monster.length);
     let HP = Math.floor((Math.floor(Math.random()*40) + 80)/100 * monster[random].HP);
+    let randomColor = "#" + Math.floor((Math.random()*10)) + "" + Math.floor((Math.random()*10)) + "" + Math.floor((Math.random()*10))
     let newMonster = {
       name: monster[random].name,
       HP: HP,
@@ -226,6 +228,7 @@ export default class Fight extends React.Component {
 
     this.setState({
       enemy: newMonster,
+      randomColor: randomColor,
       isFight: true
     },()=> {
       this.fighting()
@@ -233,13 +236,14 @@ export default class Fight extends React.Component {
   }
 
   fighting() {
-
     let role = this.state.role
     let enemy = this.state.enemy
     let bag = this.state.bag
     let money = this.state.money
     let description = [].concat(this.state.description)
     let _this = this
+    let date = new Date()
+    let timeNow = date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds()
 
     if(this.state.isFight) {
       if(role.agility >= enemy.agility && !role.isTurn) {
@@ -257,7 +261,7 @@ export default class Fight extends React.Component {
             let equip = Object.assign({},equipment[roll])
             bag.push(equip)
           }
-          str = `${this.state.role.name}战斗胜利！获得${exp}经验,${getMoney}金币`
+          str = <Text>[{timeNow}]<Text style={{color: "#f20"}}>战斗胜利！</Text>获得<Text style={{color: "#40b5ef"}}>{exp}</Text>经验,<Text style={{color: "#f7a60d"}}>{getMoney}</Text>金币</Text>
           role.EXP += exp
           money += getMoney
           role.nowHP = role.HP
@@ -277,7 +281,7 @@ export default class Fight extends React.Component {
           }
           isFight = false
         }else {
-          str = `${this.state.role.name}对${enemy.name}造成了${damage}伤害`
+          str = <Text>[{timeNow}]你对<Text style={{color:this.state.randomColor}}>{enemy.name}</Text>造成了<Text style={{color:"red"}}>{damage}</Text>伤害</Text>
           isFight = true
         }
         if(description.length >= this.state.set.maxDesLen) {
@@ -308,11 +312,12 @@ export default class Fight extends React.Component {
         role.nowHP = role.nowHP - damage
         let str,isFight
         if(role.nowHP <= 0) {
-          str = `${this.state.role.name}战斗失败！`
+          str = <Text>{this.state.role.name}战斗失败!</Text>
           role.nowHP = role.HP
           isFight = false
         }else {
-          str = `${enemy.name}对${this.state.role.name}造成了${damage}伤害`
+          // str = `${enemy.name}对${this.state.role.name}造成了${damage}伤害`
+          str = <Text>[{timeNow}]<Text style={{color:this.state.randomColor}}>{enemy.name}</Text>对你造成了<Text style={{color:"red"}}>{damage}</Text>伤害</Text>
           isFight = true
         }
         if(description.length >= this.state.set.maxDesLen) {
@@ -345,39 +350,7 @@ export default class Fight extends React.Component {
 
 
   _renderItem({item}) {
-    let translate;
-    switch(Object.keys(item)[0]) {
-      case "strength":
-        translate = "力量";
-        break;
-      case "intelligence":
-        translate = "智力";
-        break;
-      case "agility":
-        translate = "敏捷";
-        break;
-      case "critical":
-        translate = "暴击";
-        break;
-      case "dodge":
-        translate = "闪避";
-        break;
-      case "log":
-        translate = "log"
-        break;
-      case "item":
-        translate = "tools"
-        break;
-      default:
-        translate = "none"
-    }
-    if(translate == "log") {
-      return <Text>{item.log}</Text>
-    }else if(translate == "tools") {
-      return <Text>{item.item}</Text>
-    }else{
-      return <Text style={styles.simpleFn}>{translate}:{item[Object.keys(item)[0]]}</Text>
-    }
+    return <Text style={[styles.fn12, styles.gray]}>{item.log}</Text>
   }
 
   _onPressButton(evt,item,index) {
@@ -468,17 +441,17 @@ export default class Fight extends React.Component {
          translucent={false}
          barStyle={'default'}
         /> 
-        <View style={styles.userWrapper}>
-          <View style={styles.flexPart}>
+        <View style={styles.topWrapper}>
+          <View style={[styles.flexPart,styles.bgWhite,styles.padLeft]}>
               <Text style={styles.fn24}>{this.state.role.name} lv{this.state.role.level}</Text>
-              <Text style={styles.simpleFn}>力量:{this.state.role.strength + this.state.extra.strength}</Text>
-              <Text style={styles.simpleFn}>智力:{this.state.role.intelligence  + this.state.extra.intelligence}</Text>
-              <Text style={styles.simpleFn}>敏捷:{this.state.role.agility  + this.state.extra.agility}</Text>
-              <Text style={styles.simpleFn}>暴击:{this.state.role.critical  + this.state.extra.critical}</Text>
-              <Text style={styles.simpleFn}>闪避:{this.state.role.dodge  + this.state.extra.dodge}</Text>
+              <Text style={styles.simpleFn}>力量:<Text style={styles.value}>{this.state.role.strength + this.state.extra.strength}</Text></Text>
+              <Text style={styles.simpleFn}>智力:<Text style={styles.value}>{this.state.role.intelligence  + this.state.extra.intelligence}</Text></Text>
+              <Text style={styles.simpleFn}>敏捷:<Text style={styles.value}>{this.state.role.agility  + this.state.extra.agility}</Text></Text>
+              <Text style={styles.simpleFn}>暴击:<Text style={styles.value}>{this.state.role.critical  + this.state.extra.critical}</Text></Text>
+              <Text style={styles.simpleFn}>闪避:<Text style={styles.value}>{this.state.role.dodge  + this.state.extra.dodge}</Text></Text>
               <Text style={styles.simpleFn}>攻击力:{this.state.role.minAttack} - {this.state.role.maxAttack}</Text>
           </View>
-          <View style={styles.flexPart}>
+          <View style={[styles.flexPart,styles.bgWhite,styles.equipWrapper]}>
             <TouchableOpacity>
               <Text style={styles.fn24}>装备</Text>
             </TouchableOpacity>
@@ -488,7 +461,7 @@ export default class Fight extends React.Component {
               <Text style={styles.simpleFn}>戒指:{this.state.tools.ring.name == undefined?"无":this.state.tools.ring.name}</Text>
               <Text style={styles.simpleFn}>项链:{this.state.tools.necklace.name == undefined?"无":this.state.tools.necklace.name}</Text>
           </View>
-          <View style={styles.flexPart}>
+          <View style={[styles.flexPart,styles.bgWhite, styles.padLeft]}>
               <Text style={styles.fn24}>对手</Text>
               <Text style={[styles.bold,this.state.enemy.type === "boss"?styles.red:""]}>{this.state.enemy.name}{this.state.enemy.type === "boss"?"(首领)":""}</Text>
               <Text>生命值：{this.state.enemy.HP}</Text>
@@ -500,8 +473,8 @@ export default class Fight extends React.Component {
               <Text>金币:{this.state.money}</Text>
           </View>
         </View>
-        <View style={styles.bottomBox}>
-          <View style={styles.flexPart2}>
+        <View style={styles.bottomWrapper}>
+          <View style={[styles.flexPart2,styles.bgWhite,styles.padLeft]}>
             <Text style={styles.fn24}>战斗</Text>
             <FlatList
               ref="_flatList"
@@ -511,8 +484,8 @@ export default class Fight extends React.Component {
               renderItem={this._renderItem.bind(this)}
             />
           </View>
-          <View style={styles.flexPart}>
-            <View style={styles.bagWrap}>
+          <View style={[styles.flexPart,styles.bgWhite,styles.bagWrapper,styles.padLeft]}>
+            <View style={styles.bag}>
               <Text style={styles.fn24}>背包</Text><Text style={styles.bagMaxLen}>{this.state.bag.length}/50</Text>
             </View>
             <FlatList
@@ -538,31 +511,71 @@ export default class Fight extends React.Component {
 }
 
 const styles = StyleSheet.create({
-  userWrapper: {
+  //最外层包裹
+  mainWrapper: {
+    flexDirection: "column",
+    flex: 1,
+    backgroundColor: "#cdcdcd",
+    borderColor: "#cdcdcd",
+    borderBottomWidth: 1
+  },
+
+  //顶部区域包裹
+  topWrapper: {
     flexDirection: "row",
     paddingTop: 25,
-    height: "36%"
+    flex: 3
   },
-  bottomBox: {
+
+  //底部区域包裹
+  bottomWrapper: {
     flexDirection: "row",
-    paddingTop: 25,
-    height: "64%"
+    paddingTop: 5,
+    flex: 5
   },
+
+  //对手信息区域
+  padding5: {
+    
+  },
+
+  //装备区域
+  equipWrapper: {
+    marginRight: 5,
+  },
+
+  //背包区域
+  bagWrapper: {
+    marginLeft: 5,
+  },
+
+  //背包装备行样式
   bagItem: {
     position: "relative",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    overflow: "visible"
+    overflow: "visible",
+    borderColor: "#eee",
+    borderBottomWidth: 1,
   },
+
+
+  //背包行样式设置
   bagControl: {
     flexDirection: "row",
   },
-  bagWrap: {
+
+  //背包标题区域
+  bag: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
+    borderColor: "#eee",
+    borderBottomWidth: 1
   },
+
+  //背包数字显示
   bagMaxLen: {
     paddingRight: 20
   },
@@ -587,13 +600,25 @@ const styles = StyleSheet.create({
     fontWeight: "600"
   },
   simpleFn: {
-    fontSize: 16,
-    lineHeight: 24
+    fontSize: 14,
+    lineHeight: 24,
+  },
+  value: {
+    color: "#eac547"
   },
   line: {
     width: "80%"
   },
   red: {
     color: "red"
-  }
+  },
+  gray: {
+    color: "#333"
+  },
+  bgWhite: {
+    backgroundColor: "#fff"
+  },
+  padLeft: {
+    paddingLeft: 5
+  } 
 });
